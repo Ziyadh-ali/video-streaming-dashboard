@@ -1,62 +1,78 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import HlsPlayer from "../components/HlsPlayer";
 import "../styles/dashboard.css";
 
 export default function Dashboard() {
-  const streams = [
-    { name: "Camera 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-    { name: "Camera 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-    { name: "Camera 3", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-    { name: "Camera 4", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-    { name: "Camera 5", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-    { name: "Camera 6", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-  ];
+    const [isPaused, setIsPaused] = useState(false);
 
-  // SYNC LOGIC
-  useEffect(() => {
-    const videos = document.querySelectorAll("video");
+    const BASE = "http://3.110.177.8:8888";
 
-    videos.forEach((v) => v.pause());
+    const streams = Array.from({ length: 6 }, (_, i) => ({
+        name: `Camera ${i + 1}`,
+        url: `${BASE}/cam${i + 1}/index.m3u8`
+    }));
 
-    setTimeout(() => {
-      videos.forEach((v) => {
-        v.currentTime = 0;
-        v.play();
-      });
-    }, 2000);
+    useEffect(() => {
+        const syncInterval = setInterval(() => {
+            if (isPaused) return;
 
-    const syncInterval = setInterval(() => {
-      const vids = document.querySelectorAll("video");
-      if (vids.length === 0) return;
+            const videos = document.querySelectorAll("video");
+            if (videos.length < 2) return;
 
-      const master = vids[0].currentTime;
+            const master = videos[0].currentTime;
 
-      vids.forEach((v) => {
-        if (Math.abs(v.currentTime - master) > 0.4) {
-          v.currentTime = master;
+            videos.forEach((v, index) => {
+                if (index === 0) return;
+
+                const diff = Math.abs(v.currentTime - master);
+
+                if (diff > 0.4) {
+                    v.currentTime = master;
+                }
+            });
+        }, 500);
+
+        return () => clearInterval(syncInterval);
+    }, [isPaused]);
+
+    const togglePauseResume = () => {
+        const videos = document.querySelectorAll("video");
+
+        if (!isPaused) {
+            videos.forEach(v => v.pause());
+            setIsPaused(true);
+        } else {
+            const masterTime = videos[0]?.currentTime || 0;
+
+            videos.forEach(v => {
+                v.currentTime = masterTime;
+                v.play();
+            });
+
+            setIsPaused(false);
         }
-      });
-    }, 1000);
+    };
 
-    return () => clearInterval(syncInterval);
-  }, []);
+    return (
+        <div className="dashboard-page">
+            <header className="dashboard-header">
+                <h1 className="dashboard-title">Video Streaming Dashboard</h1>
+            </header>
 
-  return (
-    <div className="dashboard-page">
-      <header className="dashboard-header">
-        <h1 className="dashboard-title">Video Streaming Dashboard</h1>
-      </header>
-
-      <div className="dashboard-grid">
-        {streams.map((stream, i) => (
-          <div key={i} className="camera-card">
-            <div className="camera-title">{stream.name}</div>
-            <div className="video-wrapper">
-              <HlsPlayer src={stream.url} />
+            <div className="controls">
+                <button className="ctrl-btn" onClick={togglePauseResume}>
+                    {isPaused ? "▶ Resume All" : "⏸ Pause All"}
+                </button>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+
+            <div className="dashboard-grid">
+                {streams.map((stream, i) => (
+                    <div key={i} className="camera-card">
+                        <div className="camera-title">{stream.name}</div>
+                        <HlsPlayer src={stream.url} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
