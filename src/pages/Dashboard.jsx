@@ -5,7 +5,7 @@ import "../styles/dashboard.css";
 export default function Dashboard() {
     const [isPaused, setIsPaused] = useState(false);
 
-    const BASE = "https://3.110.177.8:8888";
+    const BASE = "https://videohoster.ziyadhali.space:8888";
 
     const streams = Array.from({ length: 6 }, (_, i) => ({
         name: `Camera ${i + 1}`,
