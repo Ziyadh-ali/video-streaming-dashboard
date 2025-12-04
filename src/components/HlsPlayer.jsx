@@ -5,14 +5,22 @@ export default function HlsPlayer({ src }) {
     const videoRef = useRef(null);
     const [loading, setLoading] = useState(true);
 
+    const enterFullscreen = () => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        if (video.requestFullscreen) video.requestFullscreen();
+        else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+        else if (video.mozRequestFullScreen) video.mozRequestFullScreen();
+        else if (video.msRequestFullscreen) video.msRequestFullscreen();
+    };
+
     useEffect(() => {
         const video = videoRef.current;
-
         if (!video) return;
 
         let hls;
 
-        // If browser supports HLS natively (Safari)
         if (video.canPlayType("application/vnd.apple.mpegurl")) {
             video.src = src;
         } else {
@@ -24,17 +32,13 @@ export default function HlsPlayer({ src }) {
                 video.play().catch(() => {});
             });
 
-            hls.on(Hls.Events.ERROR, () => {
-                setLoading(false);
-            });
+            hls.on(Hls.Events.ERROR, () => setLoading(false));
         }
 
         video.onloadeddata = () => setLoading(false);
         video.onerror = () => setLoading(false);
 
-        return () => {
-            if (hls) hls.destroy();
-        };
+        return () => hls && hls.destroy();
     }, [src]);
 
     return (
@@ -52,6 +56,10 @@ export default function HlsPlayer({ src }) {
                 controls={false}
                 className="video-element"
             />
+
+            <button className="fullscreen-btn" onClick={enterFullscreen}>
+                ⤢
+            </button>
         </div>
     );
 }
