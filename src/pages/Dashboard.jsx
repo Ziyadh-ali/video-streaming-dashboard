@@ -26,7 +26,7 @@ export default function Dashboard() {
 
                 const diff = Math.abs(v.currentTime - master);
 
-                if (diff > 0.4) {
+                if (diff > 0.2) {
                     v.currentTime = master;
                 }
             });
